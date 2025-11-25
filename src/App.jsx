@@ -27,7 +27,7 @@ function App() {
   const [saving, setSaving] = useState(false);
   const [loadingApi, setLoadingApi] = useState(false);
 
-  // NEW: portion size for user plate
+  // portion size for user plate
   const [portion, setPortion] = useState("100");
 
   // compare feature state (local DB only)
@@ -36,7 +36,7 @@ function App() {
   const [compareResult, setCompareResult] = useState(null);
   const [compareError, setCompareError] = useState("");
 
-  // NEW: suggestions for main food input
+  // suggestions for main food input
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
@@ -69,7 +69,7 @@ function App() {
     return () => unsub();
   }, [user]);
 
-  // NEW: handle main input change + build suggestions
+  // handle main input change + build suggestions
   const handleQueryChange = (e) => {
     const value = e.target.value;
     setQueryText(value);
@@ -93,14 +93,14 @@ function App() {
     setShowSuggestions(matches.length > 0);
   };
 
-  // NEW: user clicks a suggestion -> fill input
+  // user clicks a suggestion -> fill input
   const handleSuggestionClick = (name) => {
     setQueryText(name);
     setShowSuggestions(false);
     setSuggestions([]);
   };
 
-  // NEW: hide suggestions after blur (with small delay so click still works)
+  // hide suggestions after blur (with small delay so click still works)
   const handleMainInputBlur = () => {
     setTimeout(() => {
       setShowSuggestions(false);
@@ -280,9 +280,9 @@ function App() {
   return (
     <div className="app-root">
       <header className="app-header">
-        <h1>AI Food Health Analyzer</h1>
+        <h1>NutriMind AI</h1>
         <p className="subtitle">
-          Type a food and get an instant health score, nutrition & simple advice.
+          Smart food analysis powered by NutriMind AI 🧠🍽️ Eat better every day.
         </p>
 
         <div className="auth-bar">
@@ -501,19 +501,21 @@ function App() {
 
       <footer className="app-footer">
         <p>
-          Built by you – quick food database + online nutrition API so almost
-          any food works 🚀
+          Built with ❤️ by NutriMind AI – quick food database + online nutrition
+          API so almost any food works 🚀
         </p>
       </footer>
     </div>
   );
 }
 
-function mapVerdictToBadge(verdict) {
-  if (verdict.StartsWith?.("Great") || verdict.startsWith("Great"))
-    return "great";
-  if (verdict.startsWith("Okay")) return "ok";
-  if (verdict.startsWith("Limit")) return "limit";
+/* ---------- helpers ---------- */
+
+function mapVerdictToBadge(verdict = "") {
+  const v = verdict.toLowerCase();
+  if (v.startsWith("great")) return "great";
+  if (v.startsWith("okay")) return "ok";
+  if (v.startsWith("limit")) return "limit";
   return "avoid";
 }
 
@@ -527,109 +529,119 @@ function formatGoal(goal) {
 
 function analyzeFood(food, goal) {
   const {
-    caloriesPer100g,
-    sugar_g,
-    fat_g,
-    protein_g,
-    processed,
-    category,
-    tags,
+    caloriesPer100g = 0,
+    sugar_g = 0,
+    fat_g = 0,
+    protein_g = 0,
+    processed = false,
+    category = "",
+    tags = [],
   } = food;
+
+  const isFruit = tags.includes("fruit") || category === "fruit";
+  const isDrink = category === "drink";
+  const isDessert = category === "dessert" || tags.includes("dessert");
+  const isSnack = category === "snack" || tags.includes("junk");
+  const isFried = tags.includes("fried");
+  const isProteinRich = protein_g >= 8;
 
   let score = 100;
 
-  if (caloriesPer100g > 250) score -= 25;
-  else if (caloriesPer100g > 180) score -= 15;
+  // Calories effect
+  if (caloriesPer100g > 300) score -= 30;
+  else if (caloriesPer100g > 180) score -= 18;
   else if (caloriesPer100g > 120) score -= 8;
-  else score -= 2;
 
-  if (sugar_g > 12) score -= 25;
-  else if (sugar_g > 8) score -= 15;
-  else if (sugar_g > 4) score -= 8;
-  else score -= 2;
+  // Sugar effect
+  if (sugar_g > 20) score -= 30;
+  else if (sugar_g > 12) score -= 20;
+  else if (sugar_g > 6) score -= 10;
 
-  if (fat_g > 15) score -= 20;
-  else if (fat_g > 8) score -= 10;
-  else if (fat_g > 4) score -= 5;
-  else score -= 1;
+  // Fat effect
+  if (fat_g > 20) score -= 25;
+  else if (fat_g > 12) score -= 15;
+  else if (fat_g > 6) score -= 10;
 
-  if (processed) score -= 10;
+  // Processing effect
+  if (processed) score -= 8;
+  if (isFried) score -= 14;
+  if (isSnack) score -= 10;
+
+  // Positive score
+  if (isProteinRich) score += 10;
+  if (isFruit) score += 6;
 
   let goalNote = "";
   if (goal === "weight_loss") {
-    if (caloriesPer100g > 150 || (tags || []).includes("junk")) {
+    if (caloriesPer100g > 160 || isSnack || isFried) {
       score -= 10;
-      goalNote = "For weight loss, this food should be limited.";
+      goalNote = "Not great for weight loss. Choose lighter, less oily foods.";
     } else {
-      goalNote = "Good choice for weight loss in moderate portion.";
+      goalNote = "Good for losing weight if portion is controlled.";
     }
   } else if (goal === "muscle_gain") {
-    if (protein_g >= 8) {
-      score += 5;
-      goalNote = "Protein is decent. Combine with exercise and balanced diet.";
-    } else {
+    if (!isProteinRich) {
+      score -= 8;
       goalNote =
-        "Protein is not very high. Add some high-protein food along with this.";
+        "Needs more protein. Add eggs, paneer, chicken or dal beside this.";
+    } else {
+      goalNote = "Good protein source — supports muscle building.";
     }
   } else if (goal === "diabetic_friendly") {
-    if (sugar_g > 8) {
-      score -= 15;
+    if (sugar_g > 10 || isDessert || isDrink) {
+      score -= 20;
       goalNote =
-        "Sugar content is on the higher side. Not ideal for diabetic-friendly diets.";
+        "High sugar — risky for diabetics. Avoid or eat rarely.";
     } else {
-      goalNote = "Sugar is moderate/low. Still, always check your doctor's advice.";
+      goalNote = "Sugar is manageable, but portion still matters.";
     }
   } else {
-    goalNote = "For general health, focus on balance and portion size.";
+    goalNote = "Good health comes from balance and portion control.";
   }
 
-  score = Math.max(0, Math.min(100, score));
+  score = Math.min(100, Math.max(0, score));
 
-  let verdict = "";
-  let verdictBadge = "";
+  let verdict, badge;
   if (score >= 80) {
     verdict = "Great choice ✔️";
-    verdictBadge = "great";
+    badge = "great";
   } else if (score >= 60) {
     verdict = "Okay in moderation 🙂";
-    verdictBadge = "ok";
+    badge = "ok";
   } else if (score >= 40) {
     verdict = "Limit this food ⚠️";
-    verdictBadge = "limit";
+    badge = "limit";
   } else {
     verdict = "Avoid regularly ❌";
-    verdictBadge = "avoid";
+    badge = "avoid";
   }
 
   const quickTips = [];
 
-  if (processed) quickTips.push("Highly processed – try to eat less frequently.");
-  if ((tags || []).includes("fried"))
-    quickTips.push("Fried food increases unhealthy fats.");
-  if ((tags || []).includes("high_calorie"))
-    quickTips.push("High calorie density – watch portion size.");
-  if ((tags || []).includes("fruit"))
-    quickTips.push("Fruits are generally good, but avoid over-eating.");
-  if ((tags || []).includes("steamed"))
-    quickTips.push(
-      "Steamed/boiled foods are usually lighter and better for digestion."
-    );
+  if (isFried)
+    quickTips.push("Avoid deep-fried foods to reduce unhealthy fats.");
+  if (sugar_g > 10) quickTips.push("High sugar — avoid regularly.");
+  if (fat_g > 12) quickTips.push("High fat — balance with vegetables.");
+  if (protein_g < 4)
+    quickTips.push("Low protein — add eggs, dal or beans for balance.");
 
+  if (isFruit) quickTips.push("Whole fruits are better than juices.");
   if (quickTips.length === 0)
-    quickTips.push("Overall okay – just keep portions reasonable.");
+    quickTips.push("Good overall — keep portions controlled.");
 
   let suggestion = "";
-  if ((tags || []).includes("junk") || (tags || []).includes("fried")) {
+  if (score >= 80)
     suggestion =
-      "Try replacing this sometimes with steamed, grilled or home-cooked alternatives.";
-  } else if ((tags || []).includes("fruit")) {
-    suggestion = "Good snack option. Combine with nuts or yogurt for better balance.";
-  } else if (category === "rice") {
+      "Include more often in your meals. Good nutrition profile! 😄";
+  else if (score >= 60)
     suggestion =
-      "Balance this with vegetables or salad to add fiber and vitamins.";
-  } else {
-    suggestion = "Combine with vegetables, water and activity for better health.";
-  }
+      "Decent choice — add salad/veg to improve nutrition and digestion.";
+  else if (score >= 40)
+    suggestion =
+      "Try to replace with healthier alternatives most days of the week.";
+  else
+    suggestion =
+      "Only an occasional treat — try something less sugary/fried.";
 
   return {
     foodName: food.name,
@@ -641,11 +653,30 @@ function analyzeFood(food, goal) {
     processed,
     score,
     verdict,
-    verdictBadge,
+    verdictBadge: badge,
     goalNote,
     quickTips,
     suggestion,
   };
+}
+
+function getHighlight(result) {
+  const { sugar_g, fat_g, protein_g, caloriesPer100g, processed, category } =
+    result;
+
+  if (sugar_g > 20) return "⚠️ Very High Sugar";
+  if (sugar_g > 12) return "⚠️ High Sugar";
+
+  if (fat_g > 20) return "⚠️ Very High Fat";
+  if (fat_g > 12) return "⚠️ High Fat";
+
+  if (processed && (category === "snack" || category === "dessert"))
+    return "⚠️ Processed Junk Food";
+
+  if (protein_g >= 12) return "💪 High Protein";
+  if (caloriesPer100g < 100 && !processed) return "🌱 Light & Healthy";
+
+  return "✔️ Balanced Choice";
 }
 
 function NutritionCard({ result }) {
@@ -656,9 +687,6 @@ function NutritionCard({ result }) {
   const sugarPortion = +(result.sugar_g * factor).toFixed(1);
   const fatPortion = +(result.fat_g * factor).toFixed(1);
   const proteinPortion = +(result.protein_g * factor).toFixed(1);
-
-  const sourceLabel =
-    result.source === "api" ? "Online nutrition API" : "Quick food database";
 
   return (
     <div className="card">
@@ -680,9 +708,10 @@ function NutritionCard({ result }) {
               <span className="chip chip-good">Less processed</span>
             )}
           </p>
-          <p className="source-text">
-            Source: <strong>{sourceLabel}</strong>
+          <p className="highlight-warning">
+            {getHighlight(result)}
           </p>
+
           <p className="portion-text">
             Portion analyzed: <strong>{portion} g</strong>{" "}
             <span style={{ opacity: 0.8 }}>(score is based on 100g)</span>

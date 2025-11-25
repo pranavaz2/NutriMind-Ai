@@ -133,7 +133,31 @@ a:hover {
   padding: 16px 18px;
   border: 1px solid #1f2937;
   box-shadow: 0 12px 35px rgba(0, 0, 0, 0.65);
+  position: relative;
+
+  /* animation + hover */
+  transition: transform 0.18s ease-out, box-shadow 0.18s ease-out,
+    border-color 0.18s ease-out, background-color 0.18s ease-out;
+  animation: cardFadeIn 0.4s ease-out;
 }
+
+.card:hover {
+  transform: translateY(-2px) scale(1.01);
+  box-shadow: 0 16px 45px rgba(0, 0, 0, 0.85);
+  border-color: #22c55e33;
+}
+
+@keyframes cardFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 
 .form-card h2,
 .compare-card h2,
@@ -146,7 +170,31 @@ button {
   font-family: inherit;
 }
 
-.primary-btn,
+.primary-btn {
+  border-radius: 999px;
+  border: 1px solid transparent;
+  padding: 0.55em 1.3em;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: transform 0.12s ease-out, box-shadow 0.12s ease-out,
+    filter 0.12s ease-out, border-color 0.12s ease-out;
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: #022c22;
+  border-color: #16a34a;
+}
+
+.primary-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.05);
+  box-shadow: 0 0 18px rgba(34, 197, 94, 0.5);
+}
+
+.primary-btn:active {
+  transform: translateY(0) scale(0.97);
+  box-shadow: 0 0 6px rgba(34, 197, 94, 0.6);
+}
+
 .secondary-btn {
   border-radius: 999px;
   border: 1px solid transparent;
@@ -244,12 +292,12 @@ button {
   padding: 6px 10px;
   font-size: 0.82rem;
   cursor: pointer;
-  transition: background 0.12s ease;
+  transition: background 0.12s ease, transform 0.08s ease;
 }
 
 .suggestion-item:hover {
-  background: #020617;
   background: rgba(15, 23, 42, 0.9);
+  transform: translateY(-1px);
 }
 
 .suggestion-name {
@@ -302,7 +350,10 @@ button {
   font-weight: 700;
   font-size: 1rem;
   border: 2px solid #1f2937;
+  transition: transform 0.18s ease-out, box-shadow 0.18s ease-out,
+    border-color 0.18s ease-out, background-color 0.18s ease-out;
 }
+
 .score-circle span {
   font-size: 1.1rem;
 }
@@ -314,7 +365,9 @@ button {
 .score-circle.great {
   border-color: #22c55e;
   background: rgba(34, 197, 94, 0.1);
+  animation: pulseScore 0.8s ease-out;
 }
+
 .score-circle.ok {
   border-color: #eab308;
   background: rgba(234, 179, 8, 0.12);
@@ -327,6 +380,22 @@ button {
   border-color: #ef4444;
   background: rgba(239, 68, 68, 0.12);
 }
+
+@keyframes pulseScore {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.0);
+  }
+  40% {
+    transform: scale(1.08);
+    box-shadow: 0 0 0 8px rgba(34, 197, 94, 0.18);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+  }
+}
+
 
 .score-text h3 {
   margin: 0 0 2px;
@@ -513,12 +582,15 @@ button {
   gap: 4px;
   cursor: pointer;
   margin-bottom: 6px;
-  transition: background 0.12s ease, border-color 0.12s ease;
+  transition: background 0.12s ease, border-color 0.12s ease,
+    transform 0.12s ease;
 }
 .history-item:hover {
   background: #020617;
   border-color: #22c55e;
+  transform: translateY(-1px);
 }
+
 
 .history-main {
   display: flex;
@@ -585,4 +657,40 @@ button {
   .compare-fields {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+.compare-result {
+  animation: comparePop 0.3s ease-out;
+}
+
+@keyframes comparePop {
+  from {
+    transform: scale(0.96);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+.highlight-warning {
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin: 6px 0 10px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.08);
+  border-left: 4px solid #22c55e;
+}
+
+.highlight-warning:has(⚠️) {
+  border-left: 4px solid #ef4444;
+}
+
+.highlight-warning:has(💪) {
+  border-left: 4px solid #3b82f6;
+}
+
+.highlight-warning:has(🌱) {
+  border-left: 4px solid #10b981;
 }
